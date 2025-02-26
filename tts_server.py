@@ -120,5 +120,5 @@ def generate_tts():
         return {"error": str(e)}, 500
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))  # Use Render's PORT (default 10000) or fallback to 10000
-    app.run(host='0.0.0.0', port=port)
+   port = int(os.environ.get("PORT", 5000))  # Siguraduhin mong PORT ang gamit
+   app.run(host="0.0.0.0", port=port)
