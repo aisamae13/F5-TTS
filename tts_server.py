@@ -91,7 +91,7 @@ def generate_tts():
                 cross_fade_duration=0.15,
                 sway_sampling_coef=-1,
                 cfg_strength=2,
-                nfe_step=32,
+                nfe_step=16,
                 speed=1.0,
                 fix_duration=None,
                 remove_silence=False,
@@ -120,4 +120,5 @@ def generate_tts():
         return {"error": str(e)}, 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    port = int(os.environ.get('PORT', 10000))  # Use Render's PORT (default 10000) or fallback to 10000
+    app.run(host='0.0.0.0', port=port)
