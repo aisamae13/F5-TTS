@@ -137,8 +137,7 @@ def generate_tts():
         return {"error": str(e)}, 500
 
 if __name__ == "__main__":
-    if os.environ.get('PORT'):  # Check if PORT environment variable exists
-        port = int(os.environ.get('PORT'))  # Use the environment's PORT value
-        app.run(host="0.0.0.0", port=port)
-    else:
-        app.run(host="0.0.0.0", port=5000)  # Default to port 5000 if no PORT variable
+    port = int(os.environ.get("PORT", 5000))  # Gumamit ng PORT na binigay ng Render
+    app.run(host="0.0.0.0", port=port)
+else:
+    app.run(host="0.0.0.0", port=5000)  # Default to port 5000 if no PORT variable
