@@ -42,8 +42,8 @@ last_device = ""
 last_ema = None
 
 
-path_data = str(files("f5_tts").joinpath("../../data"))
-path_project_ckpts = str(files("f5_tts").joinpath("../../ckpts"))
+path_data = "C:/Users/Alyssa/F5-TTS/data"
+path_project_ckpts = "C:/Users/Alyssa/F5-TTS/ckpts"
 file_train = str(files("f5_tts").joinpath("train/finetune_cli.py"))
 
 device = (
@@ -1433,16 +1433,16 @@ For tutorial and updates check here (https://github.com/SWivid/F5-TTS/discussion
 
     with gr.Tabs():
         with gr.TabItem("Transcribe Data"):
-            gr.Markdown("""```plaintext 
-Skip this step if you have your dataset, metadata.csv, and a folder wavs with all the audio files.                 
+            gr.Markdown("""```plaintext
+Skip this step if you have your dataset, metadata.csv, and a folder wavs with all the audio files.
 ```""")
 
             ch_manual = gr.Checkbox(label="Audio from Path", value=False)
 
             mark_info_transcribe = gr.Markdown(
-                """```plaintext    
-     Place your 'wavs' folder and 'metadata.csv' file in the '{your_project_name}' directory. 
-                 
+                """```plaintext
+     Place your 'wavs' folder and 'metadata.csv' file in the '{your_project_name}' directory.
+
      my_speak/
      │
      └── dataset/
@@ -1477,14 +1477,14 @@ Skip this step if you have your dataset, metadata.csv, and a folder wavs with al
             )
 
         with gr.TabItem("Vocab Check"):
-            gr.Markdown("""```plaintext 
+            gr.Markdown("""```plaintext
 Check the vocabulary for fine-tuning Emilia_ZH_EN to ensure all symbols are included. For fine-tuning a new language.
 ```""")
 
             check_button = gr.Button("Check Vocab")
             txt_info_check = gr.Text(label="Info", value="")
 
-            gr.Markdown("""```plaintext 
+            gr.Markdown("""```plaintext
 Using the extended model, you can finetune to a new language that is missing symbols in the vocab. This creates a new model with a new vocabulary size and saves it in your ckpts/project folder.
 ```""")
 
@@ -1509,17 +1509,17 @@ Using the extended model, you can finetune to a new language that is missing sym
             )
 
         with gr.TabItem("Prepare Data"):
-            gr.Markdown("""```plaintext 
+            gr.Markdown("""```plaintext
 Skip this step if you have your dataset, raw.arrow, duration.json, and vocab.txt
 ```""")
 
             gr.Markdown(
-                """```plaintext    
+                """```plaintext
      Place all your "wavs" folder and your "metadata.csv" file in your project name directory.
 
      Supported audio formats: "wav", "mp3", "aac", "flac", "m4a", "alac", "ogg", "aiff", "wma", "amr"
 
-     Example wav format:                               
+     Example wav format:
      my_speak/
      │
      ├── wavs/
@@ -1528,11 +1528,11 @@ Skip this step if you have your dataset, raw.arrow, duration.json, and vocab.txt
      |   ...
      │
      └── metadata.csv
-      
+
      File format metadata.csv:
 
-     audio1|text1 or audio1.wav|text1 or your_path/audio1.wav|text1 
-     audio2|text1 or audio2.wav|text1 or your_path/audio2.wav|text1 
+     audio1|text1 or audio1.wav|text1 or your_path/audio1.wav|text1
+     audio2|text1 or audio2.wav|text1 or your_path/audio2.wav|text1
      ...
 
      ```"""
@@ -1558,7 +1558,7 @@ Skip this step if you have your dataset, raw.arrow, duration.json, and vocab.txt
             )
 
         with gr.TabItem("Train Data"):
-            gr.Markdown("""```plaintext 
+            gr.Markdown("""```plaintext
 The auto-setting is still experimental. Please make sure that the epochs, save per updates, and last per updates are set correctly, or change them manually as needed.
 If you encounter a memory error, try reducing the batch size per GPU to a smaller number.
 ```""")
@@ -1781,7 +1781,7 @@ If you encounter a memory error, try reducing the batch size per GPU to a smalle
             )
 
         with gr.TabItem("Test Model"):
-            gr.Markdown("""```plaintext 
+            gr.Markdown("""```plaintext
 SOS: Check the use_ema setting (True or False) for your model to see what works best for you. use seed -1 from random
 ```""")
             exp_name = gr.Radio(label="Model", choices=["F5-TTS", "E2-TTS"], value="F5-TTS")
@@ -1839,7 +1839,7 @@ SOS: Check the use_ema setting (True or False) for your model to see what works 
             cm_project.change(fn=get_checkpoints_project, inputs=[cm_project], outputs=[cm_checkpoint])
 
         with gr.TabItem("Reduce Checkpoint"):
-            gr.Markdown("""```plaintext 
+            gr.Markdown("""```plaintext
 Reduce the model size from 5GB to 1.3GB. The new checkpoint can be used for inference or fine-tuning afterward, but it cannot be used to continue training.
 ```""")
             txt_path_checkpoint = gr.Text(label="Path to Checkpoint:")
