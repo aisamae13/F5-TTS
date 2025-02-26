@@ -10,17 +10,20 @@ import logging
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 
-# Define paths for each accent's checkpoint and vocab
+# Define base directory dynamically
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Define paths for each accent's checkpoint and vocab (relative to BASE_DIR)
 CHECKPOINT_MAP = {
-    "en_AU": "C:/Users/Alyssa/F5-TTS/ckpts/test_au/pretrained_model_1200000_au.pt",
-    "en_US": "C:/Users/Alyssa/F5-TTS/ckpts/test_us/pretrained_model_1200000_us.pt",
-    "en_GB": "C:/Users/Alyssa/F5-TTS/ckpts/test_gb/pretrained_model_1200000_gb.pt"
+    "en_AU": os.path.join(BASE_DIR, "ckpts", "test_au", "pretrained_model_1200000_au.pt"),
+    "en_US": os.path.join(BASE_DIR, "ckpts", "test_us", "pretrained_model_1200000_us.pt"),
+    "en_GB": os.path.join(BASE_DIR, "ckpts", "test_gb", "pretrained_model_1200000_gb.pt")
 }
 
 VOCAB_MAP = {
-    "en_AU": "C:/Users/Alyssa/F5-TTS/data/test_au_pinyin/vocab.txt",
-    "en_US": "C:/Users/Alyssa/F5-TTS/data/test_us_pinyin/vocab.txt",
-    "en_GB": "C:/Users/Alyssa/F5-TTS/data/test_gb_pinyin/vocab.txt"
+    "en_AU": os.path.join(BASE_DIR, "data", "test_au_pinyin", "vocab.txt"),
+    "en_US": os.path.join(BASE_DIR, "data", "test_us_pinyin", "vocab.txt"),
+    "en_GB": os.path.join(BASE_DIR, "data", "test_gb_pinyin", "vocab.txt")
 }
 
 models = {}
@@ -30,6 +33,7 @@ def load_model(locale):
         checkpoint_path = CHECKPOINT_MAP.get(locale, CHECKPOINT_MAP["en_US"])
         vocab_path = VOCAB_MAP.get(locale, VOCAB_MAP["en_US"])  # Default to US vocab if not found
 
+        # Check if files exist locally
         if not os.path.exists(checkpoint_path):
             logging.error(f"Checkpoint file not found: {checkpoint_path}")
             return None
@@ -37,18 +41,27 @@ def load_model(locale):
             logging.warning(f"Vocab file not found: {vocab_path}, using default or empty vocab")
             vocab_path = ""  # Fall back to empty or default vocab
 
+        logging.info(f"Loading model for locale: {locale}")
+        logging.info(f"Checkpoint path: {checkpoint_path}")
+        logging.info(f"Vocab path: {vocab_path}")
+
         # Initialize F5TTS with the checkpoint and vocab
-        model = F5TTS(
-            model_type="F5-TTS",  # Use F5-TTS model
-            ckpt_file=checkpoint_path,  # Load the specific checkpoint
-            vocab_file=vocab_path,  # Use the specific vocab for the accent
-            ode_method="euler",  # Default ODE method
-            use_ema=True,  # Use EMA (exponential moving average) model
-            vocoder_name="vocos",  # Use vocos vocoder (ensure it’s installed)
-            local_path="C:/Users/Alyssa/F5-TTS/ckpts/vocos-mel-24khz",
-            device=None  # Let F5TTS detect the device (CUDA/CPU)
-        )
-        models[locale] = model
+        try:
+            model = F5TTS(
+                model_type="F5-TTS",  # Use F5-TTS model
+                ckpt_file=checkpoint_path,  # Load the specific checkpoint
+                vocab_file=vocab_path,  # Use the specific vocab for the accent
+                ode_method="euler",  # Default ODE method
+                use_ema=True,  # Use EMA (exponential moving average) model
+                vocoder_name="vocos",  # Use vocos vocoder (ensure it’s installed)
+                local_path=os.path.join(BASE_DIR, "ckpts", "vocos-mel-24khz"),  # Use dynamic path
+                device='cuda' if torch.cuda.is_available() else None  # Use CUDA if available, else CPU
+            )
+            models[locale] = model
+            logging.info(f"Model loaded successfully for locale: {locale}")
+        except Exception as e:
+            logging.error(f"Failed to initialize F5TTS: {e}")
+            return None
     return models[locale]
 
 @app.route('/')
@@ -59,8 +72,8 @@ def home():
 def generate_tts():
     try:
         data = request.json
-        text = data.get('text', '')  # Kunin ang text mula sa Flutter app
-        locale = data.get('locale', 'en_US')  # Kunin ang accent (e.g., 'en_AU', 'en_US', 'en_GB')
+        text = data.get('text', '')  # Get text from Flutter app
+        locale = data.get('locale', 'en_US')  # Get the accent (e.g., 'en_AU', 'en_US', 'en_GB')
 
         if not text:
             return {"error": "No text given"}, 400
@@ -72,18 +85,22 @@ def generate_tts():
         # Use the infer method to generate audio
         with torch.no_grad():
             voice_id = locale.split('_')[1].lower()  # e.g., 'au', 'us', 'gb'
-            # Set reference audio file based on locale
+            # Set reference audio file based on locale (use dynamic path)
             ref_file = None
             if locale == "en_AU":
-                ref_file = "C:/Users/Alyssa/F5-TTS/data/test_au_pinyin/wavs/segment_1.wav"  # Use any segment, e.g., segment_1
+                ref_file = os.path.join(BASE_DIR, "data", "test_au_pinyin", "wavs", "segment_1.wav")
             elif locale == "en_US":
-                ref_file = "C:/Users/Alyssa/F5-TTS/data/test_us_pinyin/wavs/segment_18.wav"  # Use a different segment, e.g., segment_5
+                ref_file = os.path.join(BASE_DIR, "data", "test_us_pinyin", "wavs", "segment_18.wav")
             elif locale == "en_GB":
-                ref_file = "C:/Users/Alyssa/F5-TTS/data/test_gb_pinyin/wavs/segment_10.wav"  # Use another segment, e.g., segment_10
+                ref_file = os.path.join(BASE_DIR, "data", "test_gb_pinyin", "wavs", "segment_10.wav")
+
+            if not os.path.exists(ref_file):
+                logging.error(f"Reference audio file not found: {ref_file}")
+                return {"error": "Reference audio file not found"}, 500
 
             wav, sr, _ = model.infer(
                 ref_file=ref_file,
-                ref_text="",  # Maaari itong iwanang blangko o idagdag ang reference text kung kinakailangan
+                ref_text="",  # Can be left empty or add a reference text if needed
                 gen_text=text,
                 show_info=lambda x: logging.info(x),
                 progress=None,
@@ -91,7 +108,7 @@ def generate_tts():
                 cross_fade_duration=0.15,
                 sway_sampling_coef=-1,
                 cfg_strength=2,
-                nfe_step=16,
+                nfe_step=32,  # Optimized for quality, adjust for speed if needed
                 speed=1.0,
                 fix_duration=None,
                 remove_silence=False,
@@ -119,6 +136,9 @@ def generate_tts():
         logging.error(f"Error generating TTS: {e}")
         return {"error": str(e)}, 500
 
-if __name__ == '__main__':
-   port = int(os.environ.get("PORT", 5000))  # Siguraduhin mong PORT ang gamit
-   app.run(host="0.0.0.0", port=port)
+if __name__ == "__main__":
+    if os.environ.get('PORT'):  # Check if PORT environment variable exists
+        port = int(os.environ.get('PORT'))  # Use the environment's PORT value
+        app.run(host="0.0.0.0", port=port)
+    else:
+        app.run(host="0.0.0.0", port=5000)  # Default to port 5000 if no PORT variable
