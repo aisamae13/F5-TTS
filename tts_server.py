@@ -73,10 +73,15 @@ def generate_tts():
     try:
         data = request.json
         text = data.get('text', '')  # Get text from Flutter app
-        locale = data.get('locale', 'en_US')  # Get the accent (e.g., 'en_AU', 'en_US', 'en_GB')
+        locale = data.get('locale', 'en_US')  # Get the accent, default to 'en_US'
 
         if not text:
             return {"error": "No text given"}, 400
+
+        # Ensure locale is a string and not None before splitting
+        if locale is None or not isinstance(locale, str):
+            logging.warning(f"Invalid locale received: {locale}, defaulting to 'en_US'")
+            locale = 'en_US'
 
         model = load_model(locale)
         if model is None:
@@ -84,7 +89,8 @@ def generate_tts():
 
         # Use the infer method to generate audio
         with torch.no_grad():
-            voice_id = locale.split('_')[1].lower()  # e.g., 'au', 'us', 'gb'
+            # Safely split locale (e.g., 'en_AU' -> 'au')
+            voice_id = locale.split('_')[1].lower() if '_' in locale else 'us'  # Default to 'us' if no underscore
             # Set reference audio file based on locale (use dynamic path)
             ref_file = None
             if locale == "en_AU":
@@ -93,6 +99,9 @@ def generate_tts():
                 ref_file = os.path.join(BASE_DIR, "data", "test_us_pinyin", "wavs", "segment_18.wav")
             elif locale == "en_GB":
                 ref_file = os.path.join(BASE_DIR, "data", "test_gb_pinyin", "wavs", "segment_10.wav")
+            else:
+                logging.warning(f"Unknown locale: {locale}, defaulting to en_US")
+                ref_file = os.path.join(BASE_DIR, "data", "test_us_pinyin", "wavs", "segment_18.wav")
 
             if not os.path.exists(ref_file):
                 logging.error(f"Reference audio file not found: {ref_file}")
@@ -108,7 +117,7 @@ def generate_tts():
                 cross_fade_duration=0.15,
                 sway_sampling_coef=-1,
                 cfg_strength=2,
-                nfe_step=32,  # Optimized for quality, adjust for speed if needed
+                nfe_step=16,  # Optimized for quality, adjust for speed if needed
                 speed=1.0,
                 fix_duration=None,
                 remove_silence=False,
@@ -137,7 +146,4 @@ def generate_tts():
         return {"error": str(e)}, 500
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Gumamit ng PORT na binigay ng Render
-    app.run(host="0.0.0.0", port=port)
-else:
-    app.run(host="0.0.0.0", port=5000)  # Default to port 5000 if no PORT variable
+    app.run(host="0.0.0.0", port=5000)
